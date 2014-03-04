@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * The main Islandora LOCKSS-O-Matic module file.
+ */
+
+/**
+ * Implements hook_islandora_bagit_post_create().
+ *
+ * @param string $pid
+ *   The PID of the Islandora object that the Bag was just created for.
+ *
+ * @param string $bag_path
+ *  The path to the Bag, relative to the Drupal installation directory.
+ */
+function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
+  // @todo: Copy each new bag to the sites public files directory
+  // so it can be crawled by LOCKSS.
+}
+
+

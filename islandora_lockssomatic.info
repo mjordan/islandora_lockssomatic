@@ -1,0 +1,8 @@
+name = Islandora LOCKSS-O-matic
+description = "Allows Islandora to deposit content into a Private LOCKSS Network managed by LOCKSS-O-Matic."
+package = Islandora Tools
+version = 7.x-dev
+core = 7.x
+configure = admin/islandora/checksum
+dependencies[] = islandora
+dependencies[] = islandora_bagit
