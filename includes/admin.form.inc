@@ -17,10 +17,6 @@
  *   The Drupal form definition.
  */
 function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
-  $get_default_value = function($name, $default) use(&$form_state) {
-    return isset($form_state['values'][$name]) ? $form_state['values'][$name] : variable_get($name, $default);
-  };
-
   $form['islandora_lockssomatic_configuration'] = array(
     '#type' => 'fieldset',
     '#title' => t('Islandora LOCKSS-O-Matic configuration'),
@@ -55,6 +51,17 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
       the web server. Do not include the trailing slash."),
     '#maxlength' => 255,
     '#required' => TRUE,
+  );
+  
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_move_copy'] = array(
+    '#type' => 'select',
+    '#title' => t('Move or copy Bag'),
+    '#default_value' => variable_get('islandora_lockssomatic_move_copy', 1),
+    '#options' => array(
+      '1' => t('Move'),
+      '0' => t('Copy'),
+    ),
+    '#description' => t('Move or copy the Bags into the harvest directory.'),
   );
 
   return system_settings_form($form);

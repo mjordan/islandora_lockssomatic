@@ -33,8 +33,19 @@ function islandora_lockssomatic_menu() {
  *  The path to the Bag, relative to the Drupal installation directory.
  */
 function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
-  // @todo: Copy each new bag to the sites public files directory
-  // so it can be crawled by LOCKSS.
+  // Copy each new bag to the sites public files directory so it can be
+  // crawled by LOCKSS.
+  $dest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
+  $dest_filename = basename($bag_path);
+  dd($bag_path, 'Source');
+  dd($dest_dir, 'Dest dir');
+  // $path_to_file = file_unmanaged_copy($bag_path, $dest_dir . DIRECTORY_SEPARATOR
+  // if (variable_get('islandora_lockssomatic_move_copy', 1)) {
+      // $path_to_file = file_unmanaged_move($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
+  // }
+  // else {
+    $path_to_file = file_unmanaged_copy($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
+  // }
 }
 
 
