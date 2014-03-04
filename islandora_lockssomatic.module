@@ -6,6 +6,24 @@
  */
 
 /**
+ * Implements hook_menu().
+ */
+function islandora_lockssomatic_menu() {
+  $items = array();
+  $items['admin/islandora/lockssomatic'] = array(
+    'title' => 'Islandora LOCKSS-O-Matic',
+    'description' => 'Configure the Islandora LOCKSS-O-Matic module.',
+    'page callback' => 'drupal_get_form',
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('islandora_lockssomatic_admin_form'),
+    'file' => 'includes/admin.form.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+
+/**
  * Implements hook_islandora_bagit_post_create().
  *
  * @param string $pid
