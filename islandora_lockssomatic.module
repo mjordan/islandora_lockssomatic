@@ -6,6 +6,13 @@
  */
 
 /**
+ * Implements hook_cron().
+ */
+function islandora_lockssomatic_cron() {
+  islandora_lockssomaitc_create_deposit();
+}
+
+/**
  * Implements hook_menu().
  */
 function islandora_lockssomatic_menu() {
@@ -31,14 +38,16 @@ function islandora_lockssomatic_menu() {
 
 /**
  * Implements hook_islandora_bagit_post_create().
+ * 
+ * @todo: Add filepaths to a database table so we can create
+ * deposits in reasonably-sized chunks, e.g., in case of a large number
+ * of Bags.
  */
 function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
   // Copy each new bag to the sites public files directory so it can be
   // crawled by LOCKSS.
   $dest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $dest_filename = basename($bag_path);
-  // dd($bag_path, 'Source');
-  // dd($dest_dir, 'Dest dir');
   if (variable_get('islandora_lockssomatic_move_copy', 1)) {
     $path_to_file = file_unmanaged_move($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
   }
@@ -57,4 +66,25 @@ LOCKSS system has permission to collect, preserve, and serve this Archival Unit
 LPS;
 
   return $output;
+}
+
+/**
+ * Scans the LOCKSS base directory and issues a SWORD Deposit against
+ * LOCKSS-O-Matic.
+ * 
+ * @todo: Get SWORD Service Document; create Atom XML and POST it to LOCKSS-O-Matic.
+ * If we use a database table to store files to deposit, get a chunk and then
+ * update their status to 'deposited' in the table.
+ */
+function islandora_lockssomaitc_create_deposit() {
+  global $base_url;
+  $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
+  $harvest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
+  $content_files = file_scan_directory($harvest_dir, '/\.(zip|7z|tgz)$/');
+  if (count($content_files)) {
+    foreach ($content_files as $content_file => $attribs) {
+      // @todo: Also get size and checksum values to add to Atom entries.
+      $content_url = $base_url . '/' . $harvest_dir . '/' . $attribs->filename;
+    }
+  }
 }

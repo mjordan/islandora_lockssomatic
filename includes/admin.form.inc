@@ -17,15 +17,10 @@
  *   The Drupal form definition.
  */
 function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
+  global $base_url;
   $form['islandora_lockssomatic_configuration'] = array(
     '#type' => 'fieldset',
     '#title' => t('Islandora LOCKSS-O-Matic configuration'),
-  );
-
-  global $base_url;
-  $lockss_permission_statement = $base_url . '/islandora/lockss/permission';
-  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_permission_url'] = array(
-    '#markup' => t("Your site's LOCKSS Permission Statement URL is !lps", array('!lps' => $lockss_permission_statement)),
   );
 
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lom_base_url'] = array(
@@ -44,6 +39,7 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#size' => 5,
     '#maxlength' => 5,
     '#required' => TRUE,
+    '#description' => t("You can get this value in Islandora's Content Provider entry in LOCKSS-O-Matic."),
   );
 
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
@@ -59,11 +55,6 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#required' => TRUE,
   );
 
-  $lockss_base_url = $base_url . '/' . variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
-  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_base_url'] = array(
-    '#markup' => t("Your site's LOCKSS base URL is !lbu", array('!lbu' => $lockss_base_url)),
-  );
-
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_move_copy'] = array(
     '#type' => 'select',
     '#title' => t('Move or copy Bag'),
@@ -75,5 +66,17 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#description' => t('Move or copy the Bags into the harvest directory.'),
   );
 
+  $lockss_permission_statement = $base_url . '/islandora/lockss/permission';
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_permission_url'] = array(
+    '#markup' => t("Islandora's LOCKSS Permission Statement URL is: !lps", array('!lps' => $lockss_permission_statement)),
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
+  );
+  $lockss_base_url = $base_url . '/' . variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_base_url'] = array(
+    '#markup' => t("Islandora's LOCKSS base URL is: !lbu", array('!lbu' => $lockss_base_url)),
+    '#prefix' => '<div>',
+    '#suffix' => '</div>',
+  );
   return system_settings_form($form);
 }
