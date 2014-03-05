@@ -23,6 +23,14 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#title' => t('Islandora LOCKSS-O-Matic configuration'),
   );
 
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_use_cron'] = array(
+    '#type' => 'checkbox',
+    '#title' => t("Create 'In progress' deposits via cron."),
+    '#default_value' => variable_get('islandora_lockssomatic_use_cron', 1),
+    '#description' => t('Unheck this option if you want to create deposits manually using
+      the included Drush script.'),
+  );
+
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lom_base_url'] = array(
     '#type' => 'textfield',
     '#title' => t("LOCKSS-O-matic's base URL"),

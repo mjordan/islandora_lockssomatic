@@ -85,12 +85,14 @@ LPS;
 
 /**
  * Generates an Atom XML document and passes it off to a cURL request.
+ *
+ * @param string $title
+ *   The title assigned to the deposit.
  * 
- * @todo: Get SWORD Service Document; create Atom XML and POST it to
- * LOCKSS-O-Matic. If we use a database table to store files to deposit,
+ * @todo: If we use a database table to store files to deposit,
  * get a chunk and then update their status to 'deposited' in the table.
  */
-function islandora_lockssomaitc_create_deposit() {
+function islandora_lockssomaitc_create_deposit($title = NULL) {
   global $base_url;
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
   $harvest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
@@ -106,15 +108,20 @@ function islandora_lockssomaitc_create_deposit() {
       $entry['checksum'] = sha1_file($attribs->uri);
       $entries[] = $entry;
     }
+    if (!$title) {
+      $title = 'A deposit created by Islandora';
+    }
+    $atom = theme('atom_create_deposit', array(
+      // @todo: Generate the AU title.
+      'au_title' => $title,
+      'site_name' => variable_get('site_name', ''),
+      'entries' => $entries,
+      )
+    );
+    // Still testing....
+    dd($atom);
+    // islandora_lockssomatic_issue_create_deposit_request($atom);
   }
-  $atom = theme('atom_create_deposit', array(
-    // @todo: Generate the AU title.
-    'au_title' => 'A deposit created by Islandora',
-    'site_name' => variable_get('site_name', ''),
-    'entries' => $entries,
-    )
-  );
-  islandora_lockssomatic_issue_create_deposit_request($atom);
 }
 
 /**
