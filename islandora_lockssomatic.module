@@ -86,9 +86,9 @@ LPS;
 /**
  * Generates an Atom XML document and passes it off to a cURL request.
  * 
- * @todo: Get SWORD Service Document; create Atom XML and POST it to LOCKSS-O-Matic.
- * If we use a database table to store files to deposit, get a chunk and then
- * update their status to 'deposited' in the table.
+ * @todo: Get SWORD Service Document; create Atom XML and POST it to
+ * LOCKSS-O-Matic. If we use a database table to store files to deposit,
+ * get a chunk and then update their status to 'deposited' in the table.
  */
 function islandora_lockssomaitc_create_deposit() {
   global $base_url;
@@ -101,8 +101,8 @@ function islandora_lockssomaitc_create_deposit() {
       $entry = array();
       $entry['url'] = $base_url . '/' . $harvest_dir . '/' . $attribs->filename;
       $entry['size'] = filesize($attribs->uri);
-      // @todo: Build in logic to get md5, etc. Also, PHP doesn't have a built-in UUID
-      // generator.
+      // @todo: Build in logic to get md5, etc. Also, PHP doesn't have a
+      // built-in UUID generator.
       $entry['checksum'] = sha1_file($attribs->uri);
       $entries[] = $entry;
     }
@@ -126,24 +126,30 @@ function islandora_lockssomatic_issue_create_deposit_request($atom) {
   // Get Service Document, including the content provider ID
   // as the value of 'X-On-Behalf-Of'. Expect a 200 in return.
   $content_provider_id = variable_get('islandora_lockssomatic_content_provider_id', '10');
-  
+  $sd_iri = variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic');
+  $sd_iri .= '/api/sword/2.0/sd-iri';
+
   $curl_service_statement = curl_init();
-  curl_setopt($curl_service_statement, CURLOPT_URL, variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic'));
+  curl_setopt($curl_service_statement, CURLOPT_URL, $sd_iri);
   curl_setopt($curl_service_statement, CURLOPT_POSTFIELDS, $atom);
   // @todo: Make In-Progress conditional.
-  curl_setopt($curl_service_statement, CURLOPT_HTTPHEADER, array('X-On-Behalf-Of: ' . $content_provider_id));
+  curl_setopt($curl_service_statement, CURLOPT_HTTPHEADER,
+    array('X-On-Behalf-Of: ' . $content_provider_id)
+  );
   curl_exec($curl_service_statement);
   $service_doc_request_info = curl_getinfo($curl_service_statement);
-  
+
   // Issue the Deposit request.
+  $col_iri = variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic');
+  $col_iri .= '/api/sword/2.0/col-iri/' . $content_provider_id;
   if ($service_doc_request_info['http_code'] == '200') {
     $curl_deposit = curl_init();
-    curl_setopt($curl_deposit, CURLOPT_URL, variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic'));
+    curl_setopt($curl_deposit, CURLOPT_URL, $col_iri);
     curl_setopt($curl_deposit, CURLOPT_POSTFIELDS, $atom);
     // @todo: Make In-Progress conditional.
     curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array('X-In-Progress: true'));
     curl_exec($curl_deposit);
+    // @todo: Check the response code. Expect a 201.
     $deposit_request_info = curl_getinfo($curl_deposit);
   }
-    
 }
