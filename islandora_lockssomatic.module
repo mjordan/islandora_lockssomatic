@@ -35,6 +35,21 @@ function islandora_lockssomatic_menu() {
   return $items;
 }
 
+/**
+ * Implements hook_theme().
+ */
+function islandora_lockssomatic_theme() {
+  return array(
+    'atom_create_deposit' => array(
+      'variables' => array(
+        'au_title' => NULL,
+        'site_name' => NULL,
+        'entries' => NULL,
+      ),
+      'template' => 'atom-create-deposit',
+    ),
+  );
+}
 
 /**
  * Implements hook_islandora_bagit_post_create().
@@ -69,8 +84,7 @@ LPS;
 }
 
 /**
- * Scans the LOCKSS base directory and issues a SWORD Deposit against
- * LOCKSS-O-Matic.
+ * Generates an Atom XML document and passes it off to a cURL request.
  * 
  * @todo: Get SWORD Service Document; create Atom XML and POST it to LOCKSS-O-Matic.
  * If we use a database table to store files to deposit, get a chunk and then
@@ -82,9 +96,54 @@ function islandora_lockssomaitc_create_deposit() {
   $harvest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $content_files = file_scan_directory($harvest_dir, '/\.(zip|7z|tgz)$/');
   if (count($content_files)) {
+    $entries = array();
     foreach ($content_files as $content_file => $attribs) {
-      // @todo: Also get size and checksum values to add to Atom entries.
-      $content_url = $base_url . '/' . $harvest_dir . '/' . $attribs->filename;
+      $entry = array();
+      $entry['url'] = $base_url . '/' . $harvest_dir . '/' . $attribs->filename;
+      $entry['size'] = filesize($attribs->uri);
+      // @todo: Build in logic to get md5, etc. Also, PHP doesn't have a built-in UUID
+      // generator.
+      $entry['checksum'] = sha1_file($attribs->uri);
+      $entries[] = $entry;
     }
   }
+  $atom = theme('atom_create_deposit', array(
+    // @todo: Generate the AU title.
+    'au_title' => 'A deposit created by Islandora',
+    'site_name' => variable_get('site_name', ''),
+    'entries' => $entries,
+    )
+  );
+  islandora_lockssomatic_issue_create_deposit_request($atom);
+}
+
+/**
+ * Issues a SWORD Deposit against LOCKSS-O-Matic.
+ * 
+ * @todo: Wrap these requests in try/catch.
+ */
+function islandora_lockssomatic_issue_create_deposit_request($atom) {
+  // Get Service Document, including the content provider ID
+  // as the value of 'X-On-Behalf-Of'. Expect a 200 in return.
+  $content_provider_id = variable_get('islandora_lockssomatic_content_provider_id', '10');
+  
+  $curl_service_statement = curl_init();
+  curl_setopt($curl_service_statement, CURLOPT_URL, variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic'));
+  curl_setopt($curl_service_statement, CURLOPT_POSTFIELDS, $atom);
+  // @todo: Make In-Progress conditional.
+  curl_setopt($curl_service_statement, CURLOPT_HTTPHEADER, array('X-On-Behalf-Of: ' . $content_provider_id));
+  curl_exec($curl_service_statement);
+  $service_doc_request_info = curl_getinfo($curl_service_statement);
+  
+  // Issue the Deposit request.
+  if ($service_doc_request_info['http_code'] == '200') {
+    $curl_deposit = curl_init();
+    curl_setopt($curl_deposit, CURLOPT_URL, variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic'));
+    curl_setopt($curl_deposit, CURLOPT_POSTFIELDS, $atom);
+    // @todo: Make In-Progress conditional.
+    curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array('X-In-Progress: true'));
+    curl_exec($curl_deposit);
+    $deposit_request_info = curl_getinfo($curl_deposit);
+  }
+    
 }
