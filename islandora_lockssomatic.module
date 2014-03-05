@@ -9,7 +9,9 @@
  * Implements hook_cron().
  */
 function islandora_lockssomatic_cron() {
-  islandora_lockssomaitc_create_deposit();
+  if (variable_get('islandora_lockssomatic_use_cron', 1)) {
+    islandora_lockssomaitc_create_deposit();
+  }
 }
 
 /**
