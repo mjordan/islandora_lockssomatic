@@ -19,33 +19,42 @@ function islandora_lockssomatic_menu() {
     'file' => 'includes/admin.form.inc',
     'type' => MENU_NORMAL_ITEM,
   );
+  $items['islandora/lockss/permission'] = array(
+    'title' => 'LOCKSS Permission Statement',
+    'page callback' => 'islandora_lockssomatic_output_permission_statement',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
 
 /**
  * Implements hook_islandora_bagit_post_create().
- *
- * @param string $pid
- *   The PID of the Islandora object that the Bag was just created for.
- *
- * @param string $bag_path
- *  The path to the Bag, relative to the Drupal installation directory.
  */
 function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
   // Copy each new bag to the sites public files directory so it can be
   // crawled by LOCKSS.
   $dest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $dest_filename = basename($bag_path);
-  dd($bag_path, 'Source');
-  dd($dest_dir, 'Dest dir');
-  // $path_to_file = file_unmanaged_copy($bag_path, $dest_dir . DIRECTORY_SEPARATOR
-  // if (variable_get('islandora_lockssomatic_move_copy', 1)) {
-      // $path_to_file = file_unmanaged_move($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
-  // }
-  // else {
+  // dd($bag_path, 'Source');
+  // dd($dest_dir, 'Dest dir');
+  if (variable_get('islandora_lockssomatic_move_copy', 1)) {
+    $path_to_file = file_unmanaged_move($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
+  }
+  else {
     $path_to_file = file_unmanaged_copy($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
-  // }
+  }
 }
 
+/**
+ * Prints the required part of the LOCKSS Permission Statement.
+ */
+function islandora_lockssomatic_output_permission_statement() {
+  $output = <<<LPS
+<img src="http://www.lockss.org/images/LOCKSS-small.gif" height="108" width="108">
+LOCKSS system has permission to collect, preserve, and serve this Archival Unit
+LPS;
 
+  return $output;
+}

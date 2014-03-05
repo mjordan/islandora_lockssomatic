@@ -22,24 +22,30 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#title' => t('Islandora LOCKSS-O-Matic configuration'),
   );
 
+  global $base_url;
+  $lockss_permission_statement = $base_url . '/islandora/lockss/permission';
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_permission_url'] = array(
+    '#markup' => t("Your site's LOCKSS Permission Statement URL is !lps", array('!lps' => $lockss_permission_statement)),
+  );
+
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lom_base_url'] = array(
-    '#type' => 'textfield', 
-    '#title' => t("LOCKSS-O-matic's base URL"), 
+    '#type' => 'textfield',
+    '#title' => t("LOCKSS-O-matic's base URL"),
     '#default_value' => variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic'),
-    '#size' => 60, 
-    '#maxlength' => 128, 
+    '#size' => 60,
+    '#maxlength' => 128,
     '#required' => TRUE,
     '#description' => t('Do not include the trailing slash.'),
   );
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_content_provider_id'] = array(
-    '#type' => 'textfield', 
-    '#title' => t("Islandora's LOCKSS-O-Matic Content Provider ID"), 
+    '#type' => 'textfield',
+    '#title' => t("Islandora's LOCKSS-O-Matic Content Provider ID"),
     '#default_value' => variable_get('islandora_lockssomatic_content_provider_id', '10'),
-    '#size' => 5, 
-    '#maxlength' => 5, 
+    '#size' => 5,
+    '#maxlength' => 5,
     '#required' => TRUE,
   );
-  
+
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_harvest_directory'] = array(
     '#title' => t('Harvest directory'),
@@ -52,7 +58,12 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#maxlength' => 255,
     '#required' => TRUE,
   );
-  
+
+  $lockss_base_url = $base_url . '/' . variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_base_url'] = array(
+    '#markup' => t("Your site's LOCKSS base URL is !lbu", array('!lbu' => $lockss_base_url)),
+  );
+
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_move_copy'] = array(
     '#type' => 'select',
     '#title' => t('Move or copy Bag'),
