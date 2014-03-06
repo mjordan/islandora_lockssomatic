@@ -1,8 +1,7 @@
 <?php
 /**
  * @file
- * Template file for the PREMIS fixity check message that is added to
- * the Islandora object's audit log for each datastream.
+ * Template for the Atom XML used to create deposits.
  * 
  * Available variables:
  *   $au_title string
