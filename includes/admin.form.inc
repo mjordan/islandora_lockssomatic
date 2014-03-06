@@ -40,6 +40,7 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#required' => TRUE,
     '#description' => t('Do not include the trailing slash.'),
   );
+
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_content_provider_id'] = array(
     '#type' => 'textfield',
     '#title' => t("Islandora's LOCKSS-O-Matic Content Provider ID"),
@@ -48,6 +49,27 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#maxlength' => 5,
     '#required' => TRUE,
     '#description' => t("You can get this value in Islandora's Content Provider entry in LOCKSS-O-Matic."),
+  );
+
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_hostname'] = array(
+    '#type' => 'textfield',
+    '#title' => t("Islandora's hostname"),
+    '#default_value' => variable_get('islandora_lockssomatic_hostname', $base_url),
+    '#size' => 60,
+    '#maxlength' => 255,
+    '#required' => TRUE,
+    '#description' => t("This Islandor installation's hostname, without the trailing slash."),
+  );
+
+  $ip = gethostbyname(php_uname('n'));
+  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_ip_address'] = array(
+    '#type' => 'textfield',
+    '#title' => t("Islandora's IP address"),
+    '#default_value' => variable_get('islandora_lockssomatic_ip_address', $ip),
+    '#size' => 60,
+    '#maxlength' => 255,
+    '#required' => TRUE,
+    '#description' => t("This Islandor installation's IP address."),
   );
 
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
@@ -74,26 +96,13 @@ function islandora_lockssomatic_admin_form(array $form, array &$form_state) {
     '#description' => t('Move or copy the Bags into the harvest directory.'),
   );
 
-  $hostname = php_uname('n');
-  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_hostname'] = array(
-    '#markup' => t("Islandora's hostname is: !hostname", array('!hostname' => $hostname)),
-    '#prefix' => '<div>',
-    '#suffix' => '</div>',
-  );
-
-  $ip = gethostbyname($hostname);
-  $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_ip'] = array(
-    '#markup' => t("Islandora's IP address is: !ip", array('!ip' => $ip)),
-    '#prefix' => '<div>',
-    '#suffix' => '</div>',
-  );
-
   $lockss_permission_statement = $base_url . '/islandora/lockss/permission';
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_permission_url'] = array(
     '#markup' => t("Islandora's LOCKSS Permission Statement URL is: !lps", array('!lps' => $lockss_permission_statement)),
     '#prefix' => '<div>',
     '#suffix' => '</div>',
   );
+
   $lockss_base_url = $base_url . '/' . variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $form['islandora_lockssomatic_configuration']['islandora_lockssomatic_lockss_base_url'] = array(
     '#markup' => t("Islandora's LOCKSS base URL is: !lbu", array('!lbu' => $lockss_base_url)),
