@@ -86,13 +86,21 @@ LPS;
 /**
  * Generates an Atom XML document and passes it off to a cURL request.
  *
+ * @param bool $in_progress
+ *   Whether or not the request issues a true or false value
+ *   for the 'X-In-Progress' header.
  * @param string $title
  *   The title assigned to the deposit.
  * 
  * @todo: If we use a database table to store files to deposit,
  * get a chunk and then update their status to 'deposited' in the table.
+ * 
+ * @todo: Add UUID generator and populate the <id> field with it with
+ * urn:uuid: prepended.
+ * 
+ * @todo: Generate AU title if one is not provided.
  */
-function islandora_lockssomatic_create_deposit($title = NULL) {
+function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NULL) {
   global $base_url;
   list($col_iri, $checksum_type) = islandora_lockssomatic_get_service_document();
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
@@ -105,28 +113,41 @@ function islandora_lockssomatic_create_deposit($title = NULL) {
       $entry['url'] = variable_get('islandora_lockssomatic_hostname', $base_url) .
         '/' . $harvest_dir . '/' . $attribs->filename;
       $entry['size'] = filesize($attribs->uri);
-      // @todo: Build in logic to get md5, etc. Also, PHP doesn't have a
-      // built-in UUID generator.
-      $entry['checksum'] = sha1_file($attribs->uri);
+      switch ($checksum_type) {
+        case 'sha-1':
+          $entry['checksum_type'] = 'sha-1';
+          $entry['checksum_value'] = sha1_file($attribs->uri);
+          break;
+        case 'md5':
+          $entry['checksum_type'] = 'md5';
+          $entry['checksum_value'] = md5_file($attribs->uri);
+          break;
+        default:
+          $entry['checksum_type'] = 'sha-1';
+          $entry['checksum_value'] = sha1_file($attribs->uri);
+      }
       $entries[] = $entry;
     }
+    // @todo: Generate the AU title.
     if (!$title) {
-      $title = 'A deposit created by Islandora';
+      $title = 'A deposit created by Islandora LOCKSS-O-Matic';
     }
     $atom = theme('atom_create_deposit', array(
-      // @todo: Generate the AU title.
       'au_title' => $title,
       'site_name' => variable_get('site_name', ''),
       'entries' => $entries,
       )
     );
-    islandora_lockssomatic_post_deposit_request($col_iri, $atom);
+    islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom);
   }
 }
 
 /**
  * Issues a SWORD Deposit against LOCKSS-O-Matic.
  * 
+ * @param bool $in_progress
+ *   Whether or not the request issues a true or false value
+ *   for the 'X-In-Progress' header.
  * @param string $col_iri
  *   The SWORD Col-IRI, as parsed from the Service Document. Content
  *   Provider ID will be appended.
@@ -136,14 +157,18 @@ function islandora_lockssomatic_create_deposit($title = NULL) {
  * @return bool
  *   FALSE if an error was caught.
  */
-function islandora_lockssomatic_post_deposit_request($col_iri, $atom) {
+function islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom) {
   // Issue the Deposit request.
+  if ($in_progress) {
+    $in_progress_header = 'X-In-Progress: true';
+  }
+  else {
+    $in_progress_header = 'X-In-Progress: false';
+  }
   $curl_deposit = curl_init();
   curl_setopt($curl_deposit, CURLOPT_URL, $col_iri);
   curl_setopt($curl_deposit, CURLOPT_POSTFIELDS, $atom);
-  // @todo: Make In-Progress conditional based on whether the target
-  // AU is open or closed.
-  curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array('X-In-Progress: true'));
+  curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array($in_progress_header));
   try {
     curl_exec($curl_deposit);
   }

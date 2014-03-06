@@ -21,6 +21,6 @@
   <updated>2013-10-07T17:17:08Z</updated>
   <summary type="text">Content deposited to LOCKSS-O-Matic by content provider <?php print $site_name; ?>.</summary>
   <?php foreach ($entries as $entry) : ?>
-  <lom:content size="<?php print $entry['size']; ?>" checksumType="sha-1" checksumValue="<?php print $entry['checksum']; ?>"><?php print $entry['url']; ?></lom:content>
+  <lom:content size="<?php print $entry['size']; ?>" checksumType="<?php print $entry['checksum_type']; ?>" checksumValue="<?php print $entry['checksum_value']; ?>"><?php print $entry['url']; ?></lom:content>
   <?php endforeach; ?>
 </entry>

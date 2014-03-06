@@ -4,8 +4,8 @@
  * @file
  * Drush integration file for the Islandora LOCKSS-O-Matic module.
  *
- * Usage: drush create-islandora-lom-deposit "Deposit title"
- *   where "Deposit title" is the title that will be assigned to the
+ * Usage: drush create-islandora-lom-deposit "Title"
+ *   where "Title" is the title that will be assigned to the
  *   deposit corresponding and LOCKSS Archival Unit.
  */
 
@@ -27,7 +27,7 @@ function islandora_lockssomatic_drush_command() {
   $items['create-islandora-lom-deposit'] = array(
     'description' => dt('Create a deposit for LOCKSS-O-Matic.'),
     'arguments'   => array(
-      '"Deposit title"'  => dt('Optional. The title that will be assigned to the deposit corresponding and LOCKSS Archival Unit. If provided, must be surrounded in quotes.'),
+      '"Title"'  => dt('Optional. The title that will be assigned to the deposit corresponding and LOCKSS Archival Unit. If provided, must be surrounded in quotes.'),
     ),
     'examples' => array(
       'Standard example' => 'drush create-islandora-lom-deposit "New Islandora objects 2014-06"',
@@ -52,6 +52,6 @@ function drush_islandora_lockssomatic_create_islandora_lom_deposit($name = NULL)
   }
   else {
     drush_print('Creating SWORD Deposit');
-    islandora_lockssomatic_create_deposit($name);
+    islandora_lockssomatic_create_deposit(FALSE, $name);
   }
 }
