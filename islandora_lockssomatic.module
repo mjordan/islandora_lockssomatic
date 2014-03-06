@@ -93,8 +93,8 @@ LPS;
  * get a chunk and then update their status to 'deposited' in the table.
  */
 function islandora_lockssomatic_create_deposit($title = NULL) {
-  list($col_iri, $checksum_type) = islandora_lockssomatic_get_service_document();
   global $base_url;
+  list($col_iri, $checksum_type) = islandora_lockssomatic_get_service_document();
   $harvest_dir = variable_get('file_public_path', conf_path() . '/files/lockssomatic');
   $harvest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $content_files = file_scan_directory($harvest_dir, '/\.(zip|7z|tgz)$/');
@@ -102,7 +102,8 @@ function islandora_lockssomatic_create_deposit($title = NULL) {
     $entries = array();
     foreach ($content_files as $content_file => $attribs) {
       $entry = array();
-      $entry['url'] = variable_get('islandora_lockssomatic_hostname', $base_url). '/' . $harvest_dir . '/' . $attribs->filename;
+      $entry['url'] = variable_get('islandora_lockssomatic_hostname', $base_url) .
+        '/' . $harvest_dir . '/' . $attribs->filename;
       $entry['size'] = filesize($attribs->uri);
       // @todo: Build in logic to get md5, etc. Also, PHP doesn't have a
       // built-in UUID generator.
@@ -119,8 +120,44 @@ function islandora_lockssomatic_create_deposit($title = NULL) {
       'entries' => $entries,
       )
     );
-    // dd($atom);
     islandora_lockssomatic_post_deposit_request($col_iri, $atom);
+  }
+}
+
+/**
+ * Issues a SWORD Deposit against LOCKSS-O-Matic.
+ * 
+ * @param string $col_iri
+ *   The SWORD Col-IRI, as parsed from the Service Document. Content
+ *   Provider ID will be appended.
+ * @param string $atom
+ *   The Atom XML that will be deposited.
+ * 
+ * @return bool
+ *   FALSE if an error was caught.
+ */
+function islandora_lockssomatic_post_deposit_request($col_iri, $atom) {
+  // Issue the Deposit request.
+  $curl_deposit = curl_init();
+  curl_setopt($curl_deposit, CURLOPT_URL, $col_iri);
+  curl_setopt($curl_deposit, CURLOPT_POSTFIELDS, $atom);
+  // @todo: Make In-Progress conditional based on whether the target
+  // AU is open or closed.
+  curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array('X-In-Progress: true'));
+  try {
+    curl_exec($curl_deposit);
+  }
+  catch (Exception $e) {
+    watchdog('lockssomatic', 'SWORD Deposit Request error: !error',
+      array('!error' => $e->getMessage()));
+    return FALSE;
+  }
+  // Expect a 201 response code.
+  $deposit_request_info = curl_getinfo($curl_deposit);
+  if ($deposit_request_info['http_code'] != '201') {
+    watchdog('lockssomatic', 'WORD Deposit Request error: response code is !code',
+      array('!code' => $deposit_request_info['http_code']));
+    return FALSE;
   }
 }
 
@@ -128,7 +165,7 @@ function islandora_lockssomatic_create_deposit($title = NULL) {
  * Issue a SWORD Service Document request.
  * 
  * @return array
- *    The Col-IRI and the checksum type. 
+ *   The Col-IRI and the checksum type. 
  */
 function islandora_lockssomatic_get_service_document() {
   // Get Service Document, including the content provider ID
@@ -139,7 +176,7 @@ function islandora_lockssomatic_get_service_document() {
 
   $curl_service_document = curl_init();
   curl_setopt($curl_service_document, CURLOPT_URL, $sd_iri);
-  // @todo: Make In-Progress conditional.
+  // @todo: Make X-In-Progress conditional.
   curl_setopt($curl_service_document, CURLOPT_HTTPHEADER,
     array('X-On-Behalf-Of: ' . $content_provider_id)
   );
@@ -152,54 +189,24 @@ function islandora_lockssomatic_get_service_document() {
         array('!code' => $service_document_request_info['http_code']));
       return FALSE;
     }
-  } catch (Exception $e) {
-      watchdog('lockssomatic', 'SWORD Service Document error: !error',
-        array('!error' => $e->getMessage()));
+  }
+  catch (Exception $e) {
+    watchdog('lockssomatic', 'SWORD Service Document error: !error',
+      array('!error' => $e->getMessage()));
   }
 
   // Parse out the the Col-IRI and lom:uploadChecksumType.
   try {
-    $service_document = new SimpleXMLElement($sd);
-    $col_iri = (string) $service_document->workspace->collection['href'];
-    $service_document->registerXPathNamespace('lom', 'http://purl.org/lockssomatic/terms/SWORD');
-    $checksum_type = $service_document->xpath('//lom:uploadChecksumType');
-  } catch (Exception $e) {
-      watchdog('lockssomatic', 'SWORD Service Document error: !error',
-        array('!error' => $e->getMessage()));
+    $sd = new SimpleXMLElement($service_document);
+    $col_iri = (string) $sd->workspace->collection['href'];
+    $sd->registerXPathNamespace('lom', 'http://purl.org/lockssomatic/terms/SWORD');
+    $checksum_type = $sd->xpath('//lom:uploadChecksumType');
+  }
+  catch (Exception $e) {
+    watchdog('lockssomatic', 'SWORD Service Document error: !error',
+      array('!error' => $e->getMessage()));
     return FALSE;
   }
 
-  return array($col_iri, $checksum_type[0]);
-}
-
-/**
- * Issues a SWORD Deposit against LOCKSS-O-Matic.
- * 
- * @todo: Wrap these requests in try/catch.
- */
-function islandora_lockssomatic_post_deposit_request($col_iri, $atom) {
-  // Issue the Deposit request.
-  // $col_iri = variable_get('islandora_lockssomatic_lom_base_url', 'http://example.com/lockssomatic');
-  // $col_iri .= '/api/sword/2.0/col-iri/' . $content_provider_id;
-  if ($service_doc_request_info['http_code'] == '200') {
-    $curl_deposit = curl_init();
-    curl_setopt($curl_deposit, CURLOPT_URL, $col_iri);
-    curl_setopt($curl_deposit, CURLOPT_POSTFIELDS, $atom);
-    // @todo: Make In-Progress conditional.
-    curl_setopt($curl_deposit, CURLOPT_HTTPHEADER, array('X-In-Progress: true'));
-    try {
-    curl_exec($curl_deposit);
-    } catch (Exception $e) {
-      watchdog('lockssomatic', 'SWORD Deposit Request error: !error',
-        array('!error' => $e->getMessage()));
-        return FALSE;
-    }
-    // @todo: Check the response code. Expect a 201.
-    $deposit_request_info = curl_getinfo($curl_deposit);
-    if ($deposit_request_info['http_code'] != '201') {
-      watchdog('lockssomatic', 'WORD Deposit Request error: response code is !code',
-        array('!code' => $deposit_request_info['http_code']));
-      return FALSE;
-    }
-  }
+  return array($col_iri, (string) $checksum_type[0]);
 }
