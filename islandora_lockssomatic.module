@@ -187,7 +187,7 @@ function islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $at
 }
 
 /**
- * Issue a SWORD Service Document request.
+ * Issue a SWORD Service Document request against LOCKSS-O-Matic.
  * 
  * @return array
  *   The Col-IRI and the checksum type. 
