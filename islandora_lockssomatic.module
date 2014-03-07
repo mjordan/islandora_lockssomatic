@@ -55,10 +55,6 @@ function islandora_lockssomatic_theme() {
 
 /**
  * Implements hook_islandora_bagit_post_create().
- * 
- * @todo: Add filepaths to a database table so we can create
- * deposits in reasonably-sized chunks, e.g., in case of a large number
- * of Bags.
  */
 function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
   // Copy each new bag to the sites public files directory so it can be
@@ -107,26 +103,38 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
   $harvest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
   $content_files = file_scan_directory($harvest_dir, '/\.(zip|7z|tgz)$/');
   if (count($content_files)) {
+    // Items in this array are added to the Atom XML.
     $entries = array();
+    // Items in this array correspond to the ones in $entries and are
+    // logged in the database if the deposit is successful.
+    $deposited_log_entries = array();
     foreach ($content_files as $content_file => $attribs) {
       $entry = array();
+      $deposited_log_entry = array();
       $entry['url'] = variable_get('islandora_lockssomatic_hostname', $base_url) .
         '/' . $harvest_dir . '/' . $attribs->filename;
       $entry['size'] = filesize($attribs->uri);
+      $deposited_log_entry['filename'] = $attribs->filename;
+      $deposited_log_entry['size'] = $entry['size'];
       switch ($checksum_type) {
         case 'sha-1':
           $entry['checksum_type'] = 'sha-1';
           $entry['checksum_value'] = sha1_file($attribs->uri);
           break;
+
         case 'md5':
           $entry['checksum_type'] = 'md5';
           $entry['checksum_value'] = md5_file($attribs->uri);
           break;
+
         default:
           $entry['checksum_type'] = 'sha-1';
           $entry['checksum_value'] = sha1_file($attribs->uri);
       }
+      $deposited_log_entry['checksum_type'] = $entry['checksum_type'];
+      $deposited_log_entry['checksum_value'] = $entry['checksum_value'];
       $entries[] = $entry;
+      $deposited_log_entries[] = $deposited_log_entry;
     }
     // @todo: Generate the AU title.
     if (!$title) {
@@ -138,7 +146,7 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
       'entries' => $entries,
       )
     );
-    islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom);
+    islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom, $deposited_log_entries);
   }
 }
 
@@ -157,7 +165,7 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
  * @return bool
  *   FALSE if an error was caught.
  */
-function islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom) {
+function islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom, $deposited_log_entries) {
   // Issue the Deposit request.
   if ($in_progress) {
     $in_progress_header = 'X-In-Progress: true';
@@ -179,7 +187,11 @@ function islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $at
   }
   // Expect a 201 response code.
   $deposit_request_info = curl_getinfo($curl_deposit);
-  if ($deposit_request_info['http_code'] != '201') {
+  if ($deposit_request_info['http_code'] == '201') {
+    // Add members of $entries to the database.
+    islandora_lockssomatic_log_deposited_content($deposited_log_entries);
+  }
+  else {
     watchdog('lockssomatic', 'WORD Deposit Request error: response code is !code',
       array('!code' => $deposit_request_info['http_code']));
     return FALSE;
@@ -234,4 +246,25 @@ function islandora_lockssomatic_get_service_document() {
   }
 
   return array($col_iri, (string) $checksum_type[0]);
+}
+
+/**
+ * Insert an entry into the database for each deposited Bag.
+ * 
+ * @param array $deposited_log_entries
+ *   The Atom entries.
+ */
+function islandora_lockssomatic_log_deposited_content($deposited_log_entries) {
+  foreach ($deposited_log_entries as $entry) {
+    $entry['deposited'] = date("Y-m-d H:i:s");
+    try {
+      $return_value = db_insert('islandora_lockssomatic_content')
+        ->fields($entry)
+        ->execute();
+    }
+    catch (Exception $e) {
+      drupal_set_message(t('db_insert failed. Message = %message, query= %query',
+        array('%message' => $e->getMessage(), '%query' => $e->query_string)), 'error');
+    }
+  }
 }

@@ -1,4 +1,4 @@
-name = Islandora LOCKSS-O-matic
+name = Islandora LOCKSS-O-Matic
 description = "Allows Islandora to deposit content into a Private LOCKSS Network managed by LOCKSS-O-Matic."
 package = Islandora Tools
 version = 7.x-dev

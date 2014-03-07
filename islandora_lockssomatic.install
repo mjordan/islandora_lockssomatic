@@ -1,0 +1,61 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Islandora
+ * LOCKSS-O-matic module.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * Defines the database table used by this module.
+ */
+function islandora_lockssomatic_schema() {
+  $schema['islandora_lockssomatic_content'] = array(
+    'description' => 'Stores info on the Bags that have been included in SWORD deposits against LOCKSS-O-Matic.',
+    'fields' => array(
+      'id'  => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key.',
+      ),
+      'deposited' => array(
+        'type' => 'datetime',
+        'mysql_type' => 'DATETIME',
+        'pgsql_type' => 'timestamp without time zone',
+        'not null' => TRUE,
+        'description' => 'Timestamp when the Bag was deposited.',
+      ),
+      'filename' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Filename of the Bag.',
+      ),
+      'checksum_type' => array(
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Type of the checksum applied to the Bag on deposit.',
+      ),
+      'checksum_value' => array(
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Value of the checksum applied to the Bag on deposit.',
+      ),
+      'size' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'size' => 'big',
+        'description' => 'The size of the Bag, in bytes.',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  return $schema;
+}
