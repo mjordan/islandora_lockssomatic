@@ -133,8 +133,13 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
       }
       $deposited_log_entry['checksum_type'] = $entry['checksum_type'];
       $deposited_log_entry['checksum_value'] = $entry['checksum_value'];
-      $entries[] = $entry;
       $deposited_log_entries[] = $deposited_log_entry;
+      
+      // Only add the $entry to $entries if it hasn't already been
+      // deposited.
+      if (!islandora_lockssomatic_deposited($entry['checksum_value'])) {
+        $entries[] = $entry;
+      }
     }
     // @todo: Generate the AU title.
     if (!$title) {
@@ -146,7 +151,10 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
       'entries' => $entries,
       )
     );
-    islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom, $deposited_log_entries);
+    // Only issue a deposit request if we have new Bags.
+    if (count($entries)) {
+      islandora_lockssomatic_post_deposit_request($in_progress, $col_iri, $atom, $deposited_log_entries);
+    }
   }
 }
 
@@ -267,4 +275,21 @@ function islandora_lockssomatic_log_deposited_content($deposited_log_entries) {
         array('%message' => $e->getMessage(), '%query' => $e->query_string)), 'error');
     }
   }
+}
+
+/**
+ * Checks to see if the incoming checksum value is in the
+ * database.
+ * 
+ * @param string $checksum_value
+ *   A checksum derived from a serialized Bag.
+ * 
+ * @return int
+ *   1 or 0.
+ */
+function islandora_lockssomatic_deposited($checksum_value) {
+  $num_checksums = db_query("SELECT count(checksum_value) FROM {islandora_lockssomatic_content}
+    WHERE checksum_value = :cs", array(':cs' => $checksum_value))
+    ->fetchField();
+  return $num_checksums;
 }
