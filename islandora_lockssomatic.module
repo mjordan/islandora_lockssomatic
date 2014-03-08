@@ -143,6 +143,7 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
     $atom = theme('atom_create_deposit', array(
       'au_title' => $title,
       'uuid' => islandora_lockssomatic_generate_uuid(),
+      'utc_timestamp' => gmdate("Y-m-d\TH:i:s\Z"),
       'site_name' => variable_get('site_name', ''),
       'entries' => $entries,
       )
