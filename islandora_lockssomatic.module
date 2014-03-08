@@ -134,7 +134,7 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
       $deposited_log_entry['checksum_type'] = $entry['checksum_type'];
       $deposited_log_entry['checksum_value'] = $entry['checksum_value'];
       $deposited_log_entries[] = $deposited_log_entry;
-      
+
       // Only add the $entry to $entries if it hasn't already been
       // deposited.
       if (!islandora_lockssomatic_deposited($entry['checksum_value'])) {
@@ -278,8 +278,7 @@ function islandora_lockssomatic_log_deposited_content($deposited_log_entries) {
 }
 
 /**
- * Checks to see if the incoming checksum value is in the
- * database.
+ * Checks to see if the incoming checksum value is in the database.
  * 
  * @param string $checksum_value
  *   A checksum derived from a serialized Bag.
