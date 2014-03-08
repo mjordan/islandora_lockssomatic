@@ -45,6 +45,7 @@ function islandora_lockssomatic_theme() {
     'atom_create_deposit' => array(
       'variables' => array(
         'au_title' => NULL,
+        'uuid' => NULL,
         'site_name' => NULL,
         'entries' => NULL,
       ),
@@ -87,12 +88,6 @@ LPS;
  *   for the 'X-In-Progress' header.
  * @param string $title
  *   The title assigned to the deposit.
- * 
- * @todo: If we use a database table to store files to deposit,
- * get a chunk and then update their status to 'deposited' in the table.
- * 
- * @todo: Add UUID generator and populate the <id> field with it with
- * urn:uuid: prepended.
  * 
  * @todo: Generate AU title if one is not provided.
  */
@@ -147,6 +142,7 @@ function islandora_lockssomatic_create_deposit($in_progress = TRUE, $title = NUL
     }
     $atom = theme('atom_create_deposit', array(
       'au_title' => $title,
+      'uuid' => islandora_lockssomatic_generate_uuid(),
       'site_name' => variable_get('site_name', ''),
       'entries' => $entries,
       )
@@ -287,8 +283,36 @@ function islandora_lockssomatic_log_deposited_content($deposited_log_entries) {
  *   1 or 0.
  */
 function islandora_lockssomatic_deposited($checksum_value) {
-  $num_checksums = db_query("SELECT count(checksum_value) FROM {islandora_lockssomatic_content}
-    WHERE checksum_value = :cs", array(':cs' => $checksum_value))
+  $num_checksum = db_query("SELECT count(checksum_value) FROM 
+    {islandora_lockssomatic_content} WHERE checksum_value = :cs",
+      array(':cs' => $checksum_value))
     ->fetchField();
-  return $num_checksums;
+  return $num_checksum;
+}
+
+/**
+ * Generates a UUID v4 using PHP code.
+ *
+ * Code is borrowed from https://drupal.org/project/uuid, which
+ * itself is based on http://php.net/uniqid#65879.
+ * 
+ * @return string
+ *   A UUID.
+ */
+function islandora_lockssomatic_generate_uuid() {
+  // The field names refer to RFC 4122 section 4.1.2.
+  return sprintf('%04x%04x-%04x-4%03x-%04x-%04x%04x%04x',
+    // 32 bits for "time_low".
+    mt_rand(0, 65535), mt_rand(0, 65535),
+    // 16 bits for "time_mid".
+    mt_rand(0, 65535),
+    // 12 bits after the 0100 of (version) 4 for "time_hi_and_version".
+    mt_rand(0, 4095),
+    bindec(substr_replace(sprintf('%016b', mt_rand(0, 65535)), '10', 0, 2)),
+    // 8 bits, the last two of which (positions 6 and 7) are 01,
+    // for "clk_seq_hi_res"
+    // (hence, the 2nd hex digit after the 3rd hyphen can only be 1, 5, 9 or d)
+    // 8 bits for "clk_seq_low" 48 bits for "node".
+    mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+  );
 }

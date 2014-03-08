@@ -16,7 +16,7 @@
         xmlns:dcterms="http://purl.org/dc/terms/"
         xmlns:lom="http://lockssomatic.info/SWORD2">
   <title><?php print $au_title; ?></title>
-  <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+  <id>urn:uuid:<?php print $uuid; ?></id>
   <updated>2013-10-07T17:17:08Z</updated>
   <summary type="text">Content deposited to LOCKSS-O-Matic by content provider <?php print $site_name; ?>.</summary>
   <?php foreach ($entries as $entry) : ?>
