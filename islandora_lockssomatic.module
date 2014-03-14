@@ -60,7 +60,7 @@ function islandora_lockssomatic_theme() {
 function islandora_lockssomatic_islandora_bagit_post_create($pid, $bag_path) {
   // Copy each new bag to the sites public files directory so it can be
   // crawled by LOCKSS.
-  $dest_dir = variable_get('islandora_lockssomatic_harvest_directory', $harvest_dir);
+  $dest_dir = variable_get('islandora_lockssomatic_harvest_directory', conf_path() . '/files/lockssomatic');
   $dest_filename = basename($bag_path);
   if (variable_get('islandora_lockssomatic_move_copy', 1)) {
     $path_to_file = file_unmanaged_move($bag_path, $dest_dir, FILE_EXISTS_REPLACE);
